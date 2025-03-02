@@ -8,22 +8,22 @@ Auto regressive instruccion auto improver (ARIAI)
 import os
 from google import genai
 from google.genai import types
-#Aqui pon tu API de google
+#Here put your google API
 os.environ["API_KEY"] = ""
 
 def generate():
-    # Configurar el cliente con la clave API
+    # Set up the client with the API key
     client = genai.Client(
         api_key=os.environ.get("API_KEY"),
     )
 
-    # Definir el modelo a utilizar
+    # Define the model to be used
     model = "gemini-2.0-flash-thinking-exp-01-21"
     
-    # Pregunta inicial del usuario
+    # Initial user question
     user_input = "What is the sense of life?"
     
-    # Contenido inicial con la pregunta del usuario
+    # Initial content with the user's question
     contents = [
         types.Content(
             role="user",
@@ -32,28 +32,28 @@ def generate():
     ]
     
     def generate_initial_instruction(question):
-        # Generar una instrucción base para el primer ciclo
-        return f"Para responder a la pregunta '{question}', analiza el contexto y los elementos clave involucrados, y luego genera una respuesta detallada basada en esos elementos. Asegúrate de razonar paso a paso antes de proporcionar la respuesta final."
+        # Generate a base instruction for the first cycle
+        return f"To answer the question '{question}', analyze the context and the key elements involved, and then generate a detailed response based on those elements. Make sure to reason step by step before providing the final answer."
 
     def analyze_and_generate_instruction(question, instruction):
-        # Reflexionar y mejorar la instrucción previa
-        return f"Evalúa la instrucción anterior: '{instruction}'. Identifica si carece de profundidad, claridad o enfoque en aspectos esenciales de la pregunta '{question}'. Reformula la instrucción para que sea más precisa y detallada, incorporando la necesidad de razonar paso a paso."
+        # Reflect and improve the previous instruction
+        return f"Evaluate the previous instruction: '{instruction}'. Identify if it lacks depth, clarity, or focus on essential aspects of the question '{question}'. Reformulate the instruction to make it more precise and detailed, incorporating the need to reason step by step."
 
-    # Número de iteraciones para refinar la instrucción
+    # Number of iterations to refine the instruction
     num_iterations = 20
     final_instruction = ""
-    previous_instruction = ""  # Inicializamos la variable aquí para evitar errores
+    previous_instruction = ""  # Initialize the variable here to avoid errors
 
-    # Bucle para refinar la instrucción
+    # Loop to refine the instruction
     for i in range(num_iterations):
         if i == 0:
-            # Primera iteración: instrucción inicial
+            # First iteration: initial instruction
             system_instruction_text = generate_initial_instruction(user_input)
         else:
-            # Iteraciones siguientes: mejorar la instrucción
+            # Subsequent iterations: improve the instruction
             system_instruction_text = analyze_and_generate_instruction(user_input, previous_instruction)
 
-        # Configuración del modelo con la instrucción actual
+        # Configure the model with the current instruction
         generate_content_config = types.GenerateContentConfig(
             temperature=0.7,
             top_p=0.95,
@@ -63,9 +63,9 @@ def generate():
             system_instruction=[types.Part.from_text(text=system_instruction_text)],
         )
 
-        print(f"\n--- Instrucción generada (iteración {i+1}): {system_instruction_text} ---")
+        print(f"\n--- Generated instruction (iteration {i+1}): {system_instruction_text} ---")
 
-        # Generar contenido provisional
+        # Generate provisional content
         for chunk in client.models.generate_content_stream(
             model=model,
             contents=contents,
@@ -73,42 +73,42 @@ def generate():
         ):
             print(chunk.text, end="")
 
-        # Guardar la instrucción actual como previa para la siguiente iteración
+        # Save the current instruction as previous for the next iteration
         previous_instruction = system_instruction_text
 
-        # Actualizar contenido para la siguiente reflexión
-        print("\n--- Reflexión de la IA ---")
+        # Update content for the next reflection
+        print("\n--- AI Reflection ---")
         contents[0] = types.Content(
             role="user",
-            parts=[types.Part.from_text(text="Reflexiona sobre la respuesta anterior y ajusta la instrucción si es necesario.")],
+            parts=[types.Part.from_text(text="Reflect on the previous response and adjust the instruction if necessary.")],
         )
 
-        # Guardar la última instrucción
+        # Save the last instruction
         if i == num_iterations - 1:
             final_instruction = system_instruction_text
 
-    # Generar la respuesta final con la última instrucción
-    print("\n--- Respuesta final con la última instrucción refinada ---")
+    # Generate the final answer with the last refined instruction
+    print("\n--- Final answer with the last refined instruction ---")
     
-    # Asegurarse de que la instrucción final incluya la directiva de razonar paso a paso
-    final_instruction += " Recuerda razonar paso a paso antes de proporcionar la respuesta final y recuerda no mencionar acerca de la instruccion si no que simplemente osea lo tome en cuenta para hacer tu respuesta."
-    
+    # Ensure that the final instruction includes the step-by-step reasoning directive
+    final_instruction += " Remember to reason step by step before providing the final answer and remember not to mention the instruction, just take it into account to make your answer."
+
     generate_content_config_final = types.GenerateContentConfig(
         temperature=0.7,
         top_p=0.95,
         top_k=64,
         max_output_tokens=65536,
         response_mime_type="text/plain",
-        system_instruction=[types.Part.from_text(text=final_instruction)],  # Última instrucción como system instruction
+        system_instruction=[types.Part.from_text(text=final_instruction)],  # Last instruction as system instruction
     )
 
-    # Restaurar la pregunta original
+    # Restore the original question
     contents[0] = types.Content(
         role="user",
         parts=[types.Part.from_text(text=user_input)],
     )
 
-    # Generar y mostrar la respuesta final
+    # Generate and display the final response
     for chunk in client.models.generate_content_stream(
         model=model,
         contents=contents,
@@ -116,6 +116,7 @@ def generate():
     ):
         print(chunk.text, end="")
 
-# Ejecutar el proceso
+# Run the process
 generate()
+
 ```
